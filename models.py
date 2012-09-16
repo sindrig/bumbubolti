@@ -27,8 +27,9 @@ class Practice(models.Model):
         except IndexError:
             p = self.players.order_by('?')
             return p[len(p)/2:], p[:len(p)/2]
-        ordered = sb.ordered()
-        return [l.player for l in ordered[::2]], [l.player for l in ordered[1::2]]
+        playing = self.players.all()
+        ordered = [line.player for line in sb.ordered() if line.player in playing]
+        return ordered[::2], ordered[1::2]
         
 class Match(models.Model):
     score = ScoreField(default=(0,0))
