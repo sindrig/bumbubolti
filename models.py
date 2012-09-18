@@ -1,6 +1,8 @@
 from collections import defaultdict
 from django.db import models
 from django.db.models.signals import post_save
+from django.utils.formats import date_format
+from django.utils.timezone import now
 from bolti.fields import ScoreField
 # Create your models here.
 
@@ -15,21 +17,47 @@ class Player(models.Model):
         return ScoreBoardStatusLine(player=self)
     
 class Squad(models.Model):
+    identifier = models.TextField(blank=True, default='')
     players = models.ManyToManyField(Player, related_name='squads')
     
+    def create_identifier(self):
+        self.identifier = '-'.join([p.name for p in self.players.order_by('name')])    
+        self.save()
+    
 class Practice(models.Model):
-    players = models.ManyToManyField(Player)
+    players = models.ManyToManyField(Player, blank=True, through='Registration')
     dt = models.DateTimeField()
 
-    def teams_idea(self):
-        try:
-            sb = ScoreBoard.objects.order_by('-created')[0]
-        except IndexError:
-            p = self.players.order_by('?')
-            return p[len(p)/2:], p[:len(p)/2]
-        playing = self.players.all()
-        ordered = [line.player for line in sb.ordered() if line.player in playing]
-        return ordered[::2], ordered[1::2]
+    class Meta:
+        ordering = ['-dt']
+
+    def __unicode__(self):
+        return date_format(self.dt, 'DATE_FORMAT') + ' - ' + date_format(self.dt, 'TIME_FORMAT')
+        
+    @property
+    def has_started(self):
+        return self.dt < now()
+
+    def teams_idea(self, names=False):
+        def inner():
+            try:
+                sb = ScoreBoard.objects.order_by('-created')[0]
+            except IndexError:
+                p = self.players.order_by('?')
+                return p[len(p)/2:], p[:len(p)/2]
+            playing = self.players.all()
+            ordered = [line.player for line in sb.ordered() if line.player in playing]
+            return ordered[::2], ordered[1::2]
+        if not names: return inner()
+        return [[player.name for player in team] for team in inner()]
+        
+        
+class Registration(models.Model):
+    player = models.ForeignKey(Player)
+    practice = models.ForeignKey(Practice)
+    registered = models.DateTimeField(auto_now_add=True)
+    class Meta:
+        ordering = ['registered']
         
 class Match(models.Model):
     score = ScoreField(default=(0,0))
@@ -64,10 +92,15 @@ class ScoreBoardStatusLine(models.Model):
     points = models.IntegerField(default=0)
     scored = models.IntegerField(default=0)
     conceded = models.IntegerField(default=0)
+    points_per_match = models.FloatField(default=0.0)
     scoreboard = models.ForeignKey(ScoreBoard, related_name='lines')
     
     def __unicode__(self):
         return '\t'.join([self.player.name, str(self.played), str(self.scored), str(self.conceded), str(self.net), str(self.points)])
+        
+    def save(self, *args, **kwargs):
+        self.points_per_match = float(self.points)/float(self.played)
+        super(ScoreBoardStatusLine, self).save(*args, **kwargs)
     
     @property
     def net(self):
@@ -107,3 +140,8 @@ def update_scoreboard(sender, instance, created, **kwargs):
         
 post_save.connect(update_scoreboard, sender=Match)
         
+try:
+    from south.modelsinspector import add_introspection_rules
+    add_introspection_rules([], ["^bolti\.fields\.ScoreField"])
+except ImportError:
+    pass

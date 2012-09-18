@@ -1,0 +1,30 @@
+div.practice img{
+   width: 70px;
+   float: left; 
+   margin-left: 100px;
+   margin-bottom: 25px;
+}
+
+div.practice ol{
+    float: left;
+}
+
+div.practice div{
+    clear: both;
+}
+
+div.practice {
+    margin-bottom: 50px;
+}
+
+ul.team {
+    float: left;
+    width: 100px;
+    padding: 50px;
+    margin: 10px;
+    border: 1px solid black;
+}
+
+.bold {
+    font-weight: bold;
+}

@@ -1,0 +1,54 @@
+{% load i18n %}
+<html>
+    <head>
+        <title>{% trans "Registration" %}</title>
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+        <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/jquery-ui.min.js"></script>
+        <script src="{{STATIC_URL}}main.js"></script>
+        <link rel="stylesheet" href="//ajax.googleapis.com/ajax/libs/jqueryui/1.8.23/themes/base/jquery-ui.css" />
+        <link rel="stylesheet" href="{{STATIC_URL}}main.css" />
+        <script type="text/javascript">
+            var trans = {
+                are_you_sure_delete: "{{_("To confirm unregister, please type in your email-address")|escapejs}}",
+                del: "{{_("Delete")|escapejs}}",
+                register_scores: "{{_("Register scores")|escapejs}}",
+                save: "{{_("Save")|escapejs}}",
+            };
+            var actions = {};
+            {% for practice in practices %}
+                actions[{{practice.id}}] = {
+                    remove: "{% url bolti.views.remove practice.id %}",
+                }
+            {% endfor %}
+        </script>
+    </head>
+    <body>
+        {% if practices %}
+            {% for practice in practices %}
+                <div class="practice" id="practice_{{practice.id}}">
+                    <div class="header">
+                        <span class="bold">{{practice.dt|date:"DATE_FORMAT"}} - {{practice.dt|date:"TIME_FORMAT"}}</span>
+                        {% if practice.has_started %}
+                            <a href="{% url bolti.views.register_scores practice.id %}">{% trans "Register scores" %}</a>
+                        {% endif %}
+                        <br />
+                        {% trans "Registered:" %}
+                    </div>
+                    <ol>
+                        {% for player in practice.players.all %}
+                            <li>{{player.name}}</li>
+                        {% endfor %}
+                    </ol>
+                    <img src="{{STATIC_URL}}recycle-bin.png" />
+                    <div class="register">
+                        <form method="post" action="{% url bolti.views.register practice.id %}">
+                            {{practice.form}} <input type="submit" value="{% trans 'Register' %}"/>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <h1>{% trans "No practices scheduled" %}</h1>
+        {% endif %}
+    </body>
+</html>
