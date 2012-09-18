@@ -3,7 +3,9 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.utils.formats import date_format
 from django.utils.timezone import now
+from django.forms.widgets import flatatt
 from bolti.fields import ScoreField
+from django.utils.translation import ugettext as _
 # Create your models here.
 
 class Player(models.Model):
@@ -69,14 +71,14 @@ class ScoreBoard(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     _prepared = 0
     
-    def prepare(self, order_by = '-points'):
-        self._lines = self.lines.select_related('player').order_by(order_by)
+    def prepare(self, order_by = ['-points_per_match', '-points', '-scored', 'conceded']):
+        self._lines = self.lines.select_related('player').order_by(*order_by)
         self._prepared = 1
         
-    def ordered(self, order_by = '-points'):
+    def ordered(self, order_by = ['-points_per_match', '-points', '-scored', 'conceded']):
         if not hasattr(self, '_lines'):
-            self._lines = self.lines.select_related('player').order_by(order_by)
-        return self._lines.order_by(order_by)
+            self._lines = self.lines.select_related('player').order_by(*order_by)
+        return self._lines.order_by(*order_by)
         
     def p(self):
         #Prints scoreboard to standard output
@@ -85,6 +87,20 @@ class ScoreBoard(models.Model):
         print '\t'.join(['Pos', 'Name', 'Played', 'Scored', 'Conceded', 'Net', 'Points'])
         for i, line in enumerate(self._lines):
             print '%d\t%s'%(i, line)
+            
+    def as_table(self, table_attrs={'class': 'scoreboard'}):
+        if not self._prepared:
+            self.prepare()
+        table_attrs = flatatt(table_attrs)
+        buf = ['<table %s'%table_attrs]
+        buf.append(u'<tr><th>%s</th></tr>'%u'</th><th>'.join([_('Pos'), 
+            _('Name'), _('Played'), _('Scored'), _('Conceded'), _('Net'), 
+            _('Points'), _('Points per match')]))
+        for i, line in enumerate(self._lines):
+            buf.append(u'<tr><td>%s</td></tr>'%u'</td><td>'.join([str(i+1)]+line.as_list()))
+        buf.append('</table>')
+        return u''.join(buf)
+        
     
 class ScoreBoardStatusLine(models.Model):
     player = models.ForeignKey(Player, related_name='statusline')
@@ -96,7 +112,12 @@ class ScoreBoardStatusLine(models.Model):
     scoreboard = models.ForeignKey(ScoreBoard, related_name='lines')
     
     def __unicode__(self):
-        return '\t'.join([self.player.name, str(self.played), str(self.scored), str(self.conceded), str(self.net), str(self.points)])
+        return '\t'.join([self.player.name, str(self.played), str(self.scored), 
+            str(self.conceded), str(self.net), str(self.points), str(self.points_per_match)])
+        
+    def as_list(self):
+        return [self.player.name, str(self.played), str(self.scored), 
+            str(self.conceded), str(self.net), str(self.points), str(self.points_per_match)]
         
     def save(self, *args, **kwargs):
         self.points_per_match = float(self.points)/float(self.played)

@@ -4,6 +4,35 @@ jQuery.expr[":"].Contains = jQuery.expr.createPseudo(function(arg) {
     };
 });
 
+$.fn.styleTable = function (options) {
+    var defaults = {
+        css: 'styleTable'
+    };
+    options = $.extend(defaults, options);
+
+    return this.each(function () {
+
+        input = $(this);
+        input.addClass(options.css);
+
+        input.find("tr").live('mouseover mouseout', function (event) {
+            if (event.type == 'mouseover') {
+                $(this).children("td").addClass("ui-state-hover");
+            } else {
+                $(this).children("td").removeClass("ui-state-hover");
+            }
+        });
+
+        input.find("th").addClass("ui-state-default");
+        input.find("td").addClass("ui-widget-content");
+
+        input.find("tr").each(function () {
+            $(this).children("td:not(:first)").addClass("first");
+            $(this).children("th:not(:first)").addClass("first");
+        });
+    });
+};
+
 $(function(){
     $('form input[type="submit"]').click(function(e){
         e.preventDefault();
@@ -86,6 +115,10 @@ $(function(){
         $.ajax($(this).attr('href'), {
             success: registerScores($(this).attr('href'))
         })
+    });
+    $('div.menu a').click(function(e){
+        e.preventDefault();
+        menuactions[$(this).attr('id')]();
     })
 });
 
@@ -148,4 +181,19 @@ var registerScores = function(url){
     }
 };
 
+var menuactions = {
+    'view_scoreboard': function(){
+        $('<div id="scoreboard_holder">').dialog({
+            modal: true,
+            title: $('#view_scoreboard').text(),
+            width: '800px'
+        });
+        $.ajax(actions.get_scoreboard_table, {
+            success: function(response){
+                $('div#scoreboard_holder').html(response);
+                $('table.scoreboard').styleTable();
+            }
+        });
+    }
+};
 

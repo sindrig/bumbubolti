@@ -6,7 +6,7 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.core.urlresolvers import reverse
 from django.utils import simplejson
 from django.views.decorators.csrf import csrf_exempt
-from bolti.models import Practice, Player, Registration, Match, Squad
+from bolti.models import Practice, Player, Registration, Match, Squad, ScoreBoard
 
 def main(request):
     practices = Practice.objects.filter(dt__range=(now()-datetime.timedelta(days=1), 
@@ -74,6 +74,17 @@ def register_scores(request, practiceid):
     else:    
         home, away = Practice.objects.get(pk=practiceid).teams_idea(names=True)
         return HttpResponse(simplejson.dumps({'home': home, 'away': away}), mimetype='application/json')
+        
+def get_scoreboard_table(request, sbid=None):
+    sb = None
+    if sbid:
+        sb = ScoreBoard.objects.filter(pk=sbid)
+        if sb.exists():
+            sb = sb.get()
+    if not sb:
+        sb = ScoreBoard.objects.order_by('-created')[0]
+    return HttpResponse(sb.as_table())
+        
     
 def autocomplete(request):
     if not request.GET.get('term'):

@@ -28,3 +28,16 @@ ul.team {
 .bold {
     font-weight: bold;
 }
+
+div.menu {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    padding: 30px;
+}
+
+.styleTable { border-collapse: separate; }
+.styleTable TD { font-weight: normal !important; padding: .4em; border-top-width: 0px !important; }
+.styleTable TH { text-align: center; padding: .8em .4em; }
+.styleTable tr td {font-weight: bold !important;}
+.styleTable TD.first, .styleTable TH.first { border-left-width: 0px !important; font-weight: normal !important;}

@@ -20,9 +20,13 @@
                     remove: "{% url bolti.views.remove practice.id %}",
                 }
             {% endfor %}
+            actions['get_scoreboard_table'] = "{% url bolti.views.get_scoreboard_table %}"
         </script>
     </head>
     <body>
+        <div class="menu">
+            <a href="#" id="view_scoreboard">{% trans "View scoreboard" %}</a>
+        </div>
         {% if practices %}
             {% for practice in practices %}
                 <div class="practice" id="practice_{{practice.id}}">
